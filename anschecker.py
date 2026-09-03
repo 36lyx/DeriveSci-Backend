@@ -1,5 +1,7 @@
-"""
+"""DeriveSci-Backend/anschecker.py
 Copyright (c) 2026 Louis Liu  All rights reserved.
+
+判题引擎，用于判断用户提交的题目答案。
 """
 
 import enum

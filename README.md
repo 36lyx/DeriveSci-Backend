@@ -17,3 +17,7 @@
 本 repo 为 DeriveSci 项目正在进行重写的后端部分，其中 `models.py` 数据库部分、`fpevaluator.py`、`anschecker.py` 求值引擎无变化，路由处理部分大幅度变化，尤其是处理用户登录态的部分。
 
 **请不要再向已废弃的旧 [DeriveSci 项目](https://github.com/Louis-Liu-one/DeriveSci) 提交 Pull Requests。**
+
+## 贡献者
+
+前往 [此处](CONTRIBUTORS.md) 查看为项目作出杰出贡献的开发者。

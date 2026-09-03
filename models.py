@@ -1,4 +1,4 @@
-"""
+"""DeriveSci-Backend/models.py
 Copyright (c) 2026 Louis Liu  All rights reserved.
 
 数据库模型模块，实现网站所需的数据库操作。
@@ -306,7 +306,11 @@ class User(db.Model):
         return unread_num
 
     def avatar_url(self, anchor=None, **kwargs):
-        return url_for("auth.avatar", uid=self.uid, _anchor=anchor, **kwargs)
+        return (
+            url_for("auth.avatar", uid=self.uid, _anchor=anchor, **kwargs)
+            if self.avatar
+            else "/favicon-inverted.svg"
+        )
 
     def to_dict(self):
         return {
@@ -330,9 +334,9 @@ def find_user(val, key="uid"):
     return user
 
 
-def register_user(name, gender, password, password_confirmation, avatarfile):
+def register_user(name, gender, password, avatarfile):
     user_exists = db.session.query(User.query.filter_by(name=name).exists()).scalar()
-    if name and password and not user_exists and password == password_confirmation:
+    if name and password and not user_exists:
         user = User(name=name, gender=gender, password=generate_password_hash(password))
         if avatarfile is not None:
             user.avatar = avatarfile.read()
@@ -340,8 +344,6 @@ def register_user(name, gender, password, password_confirmation, avatarfile):
         db.session.add(user)
         db.session.commit()
         return True, user
-    elif password != password_confirmation:
-        return False, "密码与确认密码不一致。"
     elif user_exists:
         return False, "用户名与其他用户重复。"
     else:

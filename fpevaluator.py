@@ -1,3 +1,10 @@
+"""DeriveSci-Backend/fpevaluator.py
+Copyright (c) 2026 Louis Liu  All rights reserved.
+Copyright (c) 2026 Zatursure  All rights reserved.
+
+判题引擎核心。使用 SymPy 符号计算，结合 PyParsing 解析表达式实现。
+"""
+
 from textwrap import indent  # 调试用
 
 import re

@@ -1,3 +1,27 @@
+"""DeriveSci-Backend/config.py
+Copyright (c) 2026 Louis Liu  All rights reserved.
+
+后端运行所需配置。实际配置全部定义在 `.env` 文件中。`.env` 文件的模板如下：
+```
+APP_ENV='development'                  # 运行环境，允许 development 或 production
+
+# Flask
+SECRET_KEY='FlaskSecretKey'            # Flask 密钥
+
+# Database
+DATABASE_URL='mysql+pymysql://UserName:Password@localhost/DatabaseName'  # MySQL 数据库 URL
+
+# JWT
+JWT_SECRET_KEY='JWTSecretKey'          # JWT 密钥
+
+JWT_ACCESS_EXPIRES=900                 # Access Token 有效期（秒）
+JWT_REFRESH_EXPIRES=2592000            # Refresh Token 有效期（秒）
+
+# Redis
+REDIS_URL='redis://localhost:6379/0'   # Redis 服务器 URL
+```
+"""
+
 import os
 from datetime import timedelta
 

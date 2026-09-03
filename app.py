@@ -1,6 +1,8 @@
-"""
+"""DeriveSci-Backend/app.py
 Copyright (c) 2026 Louis Liu  All rights reserved.
 Copyright (c) 2026 Zatursure  All rights reserved.
+
+后端核心入口文件。
 """
 
 from dotenv import load_dotenv

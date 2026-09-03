@@ -1,6 +1,8 @@
-"""
+"""DeriveSci-Backend/blueprints/auth.py
 Copyright (c) 2026 Louis Liu  All rights reserved.
 Copyright (c) 2026 Zatursure  All rights reserved.
+
+用于用户登录态管理的若干路由。
 """
 
 import datetime
@@ -14,7 +16,7 @@ from flask_jwt_extended import (
     unset_jwt_cookies,
 )
 
-from models import db, find_user
+from models import db, find_user, register_user, unregister_user
 from utils import (
     create_tokens,
     blacklist_access_token,
@@ -54,6 +56,40 @@ def auth_login():
     return response
 
 
+@auth_bp.post("/register")
+def auth_register():
+    data = request.form
+    username = data.get("userName")
+    gender = data.get("gender")
+    password = data.get("password")
+    avatar = request.files.get("avatar")
+
+    if not username or not password:
+        return {"code": "INVALID_INPUT", "msg": "用户名和密码不能为空。"}, 400
+
+    try:
+        gender = int(gender) if gender else 0
+    except (ValueError, TypeError):
+        return {"code": "INVALID_INPUT", "msg": "性别字段非法。"}, 400
+
+    status, user = register_user(username, gender, password, avatar)
+    if not status:
+        return {"code": "REGISTRATION_FAILED", "msg": str(user)}, 400
+
+    access_token, refresh_token = create_tokens(user)
+    response = jsonify(
+        {
+            "msg": "注册成功",
+            "data": {
+                "token": access_token,
+                "user": user.to_dict(),
+            },
+        }
+    )
+    set_refresh_cookies(response, refresh_token)
+    return response
+
+
 @auth_bp.post("/refresh")
 @jwt_required(refresh=True)
 def auth_refresh():
@@ -76,6 +112,20 @@ def auth_logout():
     response = jsonify({"msg": "登出成功"})
     unset_jwt_cookies(response)
     return response
+
+
+@auth_bp.post("/unregister")
+@login_required
+def auth_unregister(user):
+    try:
+        blacklist_access_token(get_jwt())
+        revoke_refresh_token(request.cookies.get("refresh_token"))
+        unregister_user(user)
+        response = jsonify({"msg": "注销成功"})
+        unset_jwt_cookies(response)
+        return response
+    except Exception as err:
+        return {"code": "UNREGISTER_FAILED", "msg": str(err)}, 500
 
 
 @auth_bp.get("/me")
