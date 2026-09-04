@@ -91,7 +91,7 @@ def auth_register():
 
 
 @auth_bp.post("/refresh")
-@jwt_required(refresh=True)
+@jwt_required(refresh=True, locations=["cookies"])
 def auth_refresh():
     refresh_token = request.cookies.get("refresh_token")
     if not refresh_token:

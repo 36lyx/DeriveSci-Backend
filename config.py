@@ -3,7 +3,7 @@ Copyright (c) 2026 Louis Liu  All rights reserved.
 
 后端运行所需配置。实际配置全部定义在 `.env` 文件中。`.env` 文件的模板如下：
 ```
-APP_ENV='development'                  # 运行环境，允许 development 或 production
+APP_ENV='development'                  # 运行环境，允许 'development' 或 'production'
 
 # Flask
 SECRET_KEY='FlaskSecretKey'            # Flask 密钥
@@ -38,7 +38,6 @@ class Config:
     SECRET_KEY = os.getenv("SECRET_KEY")
 
     # JWT
-
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(
         seconds=int(os.getenv("JWT_ACCESS_EXPIRES", 900))
@@ -50,14 +49,12 @@ class Config:
     JWT_TOKEN_LOCATION = ["headers", "cookies"]
     JWT_REFRESH_COOKIE_NAME = "refresh_token"
     JWT_COOKIE_SECURE = IS_PRODUCTION
-    JWT_COOKIE_CSRF_PROTECT = IS_PRODUCTION
+    JWT_COOKIE_CSRF_PROTECT = True
     JWT_COOKIE_HTTPONLY = True
     JWT_COOKIE_SAMESITE = "Lax"
 
     # Redis
-
     REDIS_URL = os.getenv("REDIS_URL")
 
     # Database
-
     SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL")
