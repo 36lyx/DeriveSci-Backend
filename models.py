@@ -86,6 +86,14 @@ def utcfromnow(timestamp):
     return _utcnow() - timestamp.astimezone(datetime.UTC)
 
 
+def datetime2iso(timestamp: datetime.datetime):
+    if timestamp.tzinfo is None:
+        timestamp = timestamp.replace(tzinfo=datetime.UTC)
+    else:
+        timestamp = timestamp.astimezone(datetime.UTC)
+    return timestamp.isoformat(timespec="seconds").replace("+00:00", "Z")
+
+
 # =========================== 用户数据库与登录系统 ===========================
 
 
@@ -130,11 +138,11 @@ class User(db.Model):
             User.query.filter_by(name=name).exists()
         ).scalar()
         if name != self.name and user_exists:
-            return "用户名与其他用户重复。"
+            return "User name has been used."
         elif password != password_confirmation:
-            return "密码与确认密码不一致。"
+            return "Password confirmation failed."
         elif not name:
-            return "用户名不能为空。"
+            return "Empty user name."
         avatardata = avatarfile.read()
         if name and name != self.name:
             self.name = name
@@ -345,9 +353,9 @@ def register_user(name, gender, password, avatarfile):
         db.session.commit()
         return True, user
     elif user_exists:
-        return False, "用户名与其他用户重复。"
+        return False, "User name has been used."
     else:
-        return False, "账户创建失败。"
+        return False, "Fail to register."
 
 
 def unregister_user(user):
@@ -379,7 +387,7 @@ class Image(db.Model):
 def add_images(user, post_type, post_ident, imgfiles):
     for imgfile in imgfiles:
         if get_image(post_type, post_ident, imgfile.filename) is not None:
-            return "文件名与已有文件重复。"
+            return "File name has been used."
     for imgfile in imgfiles:
         imgdata = imgfile.read()
         if len(imgdata):
@@ -516,21 +524,30 @@ class Prob(db.Model):
         self.tags = {get_tag(tagtitle, create=True) for tagtitle in tags}
         db.session.commit()
 
-    def viewable_for(self, user):
+    def viewable_for(self, user: User | None):
         return (
             self.review_status == 1
-            or user.is_authenticated
+            or user is not None
             and (user == self.source or user.isadmin)
         )
 
-    def editable_for(self, user):
-        return user.is_authenticated and (user == self.source or user.isadmin)
+    def editable_for(self, user: User | None):
+        return user is not None and (user == self.source or user.isadmin)
 
     def get_post_ident(self):
         return self.probno
 
-    def as_tagtitles(self):
-        return {tag.tagtitle for tag in self.tags}
+    def to_dict(self):
+        return {
+            "probNo": self.probno,
+            "title": self.probtitle,
+            "lastModifiedAt": datetime2iso(self.timestamp),
+            "tags": [tag.tagtitle for tag in self.tags],
+            "statement": self.statement,
+            "isOfficial": self.isofficial,
+            "reviewStatus": self.review_status,
+            "reviewComment": self.review_comment,
+        }
 
     def __str__(self):
         return f"问题 {self.probno}"
@@ -621,7 +638,7 @@ class Tag(db.Model):
 
     def rename(self, new_title):
         if not new_title:
-            return False, "标签标题不能为空。"
+            return False, "Empty tag title."
         target_tag = get_tag(new_title)
         if target_tag is not None:
             return self.merge_with(target_tag)
@@ -631,7 +648,7 @@ class Tag(db.Model):
 
     def merge_with(self, target_tag):
         if not isinstance(target_tag, Tag):
-            return False, "目标标签不存在。"
+            return False, "Target tag not found."
         for prob in list(self.probs):
             prob.tags.remove(self)
             prob.tags.add(target_tag)
@@ -654,7 +671,7 @@ def get_post(post_type, post_ident):
     return None
 
 
-def get_prob(probno):
+def get_prob(probno: str):
     return db.session.get(Prob, str(probno))
 
 
@@ -663,11 +680,11 @@ def add_prob(**kwargs):
     probtitle = kwargs.get("probtitle")
     statement = kwargs.get("statement")
     if not probtitle:
-        return False, "题目标题不能为空。"
+        return False, "Empty title."
     elif not statement:
-        return False, "题目描述不能为空。"
+        return False, "Empty statement of the problem."
     elif get_prob(probno) is not None:
-        return False, f"以{probno}为编号的题目已存在。"
+        return False, f"Problem {probno} already exists."
     prob = Prob(**kwargs)
     db.session.add(prob)
     db.session.commit()
@@ -680,12 +697,12 @@ def get_solution(probno, solno):
 
 def add_solution(user, probno, title, content):
     if not title:
-        return False, "题解标题不能为空。"
+        return False, "Empty title."
     elif not content:
-        return False, "题解内容不能为空。"
+        return False, "Empty content."
     prob = get_prob(probno)
     if not prob:
-        return False, "未能找到题目。"
+        return False, "Problem not found."
     solution = ProbSolution(
         prob=prob,
         solno=len(prob.solutions),
@@ -771,9 +788,9 @@ def get_article(article_id):
 
 def add_article(user, title, content):
     if not title:
-        return False, "专栏标题不能为空。"
+        return False, "Empty title."
     elif not content:
-        return False, "专栏内容不能为空。"
+        return False, "Empty content."
     article = Article(user=user, title=title, content=content)
     db.session.add(article)
     db.session.commit()

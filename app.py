@@ -28,7 +28,7 @@ register_all(app)
 
 @app.errorhandler(404)
 def page_not_found(error):
-    return {"msg": str(error)}, 404
+    return {"code": "PAGE_NOT_FOUND", "msg": str(error)}, 404
 
 
 with app.app_context():

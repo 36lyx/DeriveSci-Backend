@@ -36,16 +36,19 @@ def auth_login():
     password = data.get("password")
 
     if not username or not password:
-        return {"code": "INVALID_INPUT", "msg": "用户名和密码不能为空。"}, 400
+        return {"code": "INVALID_INPUT", "msg": "Empty user name or password."}, 400
 
     user = find_user(username, "name")
     if not user or not user.verify_password(password):
-        return {"code": "INVALID_CREDENTIALS", "msg": "用户名或密码错误。"}, 401
+        return {
+            "code": "INVALID_CREDENTIALS",
+            "msg": "Incorrect user name or password.",
+        }, 401
 
     access_token, refresh_token = create_tokens(user)
     response = jsonify(
         {
-            "msg": "登录成功",
+            "msg": "Login successfully.",
             "data": {
                 "token": access_token,
                 "user": user.to_dict(),
@@ -65,12 +68,12 @@ def auth_register():
     avatar = request.files.get("avatar")
 
     if not username or not password:
-        return {"code": "INVALID_INPUT", "msg": "用户名和密码不能为空。"}, 400
+        return {"code": "INVALID_INPUT", "msg": "Empty user name or password."}, 400
 
     try:
         gender = int(gender) if gender else 0
     except (ValueError, TypeError):
-        return {"code": "INVALID_INPUT", "msg": "性别字段非法。"}, 400
+        return {"code": "INVALID_INPUT", "msg": "Invalid gender."}, 400
 
     status, user = register_user(username, gender, password, avatar)
     if not status:
@@ -79,7 +82,7 @@ def auth_register():
     access_token, refresh_token = create_tokens(user)
     response = jsonify(
         {
-            "msg": "注册成功",
+            "msg": "Register successfully.",
             "data": {
                 "token": access_token,
                 "user": user.to_dict(),
@@ -95,9 +98,12 @@ def auth_register():
 def auth_refresh():
     refresh_token = request.cookies.get("refresh_token")
     if not refresh_token:
-        return {"code": "REFRESH_TOKEN_NOT_FOUND", "msg": "refresh token 不存在"}, 401
+        return {
+            "code": "REFRESH_TOKEN_NOT_FOUND",
+            "msg": "Refresh token not found.",
+        }, 401
     if not validate_refresh_token(refresh_token):
-        return {"code": "REFRESH_TOKEN_INVALID", "msg": "refresh token 已失效"}, 401
+        return {"code": "REFRESH_TOKEN_INVALID", "msg": "Invalid refresh token."}, 401
     new_access_token, new_refresh_token = rotate_refresh_token(refresh_token)
     response = jsonify({"data": {"token": new_access_token}})
     set_refresh_cookies(response, new_refresh_token)
@@ -109,7 +115,7 @@ def auth_refresh():
 def auth_logout():
     blacklist_access_token(get_jwt())
     revoke_refresh_token(request.cookies.get("refresh_token"))
-    response = jsonify({"msg": "登出成功"})
+    response = jsonify({"msg": "Logout successfully."})
     unset_jwt_cookies(response)
     return response
 
@@ -121,7 +127,7 @@ def auth_unregister(user):
         blacklist_access_token(get_jwt())
         revoke_refresh_token(request.cookies.get("refresh_token"))
         unregister_user(user)
-        response = jsonify({"msg": "注销成功"})
+        response = jsonify({"msg": "Unregister successfully."})
         unset_jwt_cookies(response)
         return response
     except Exception as err:

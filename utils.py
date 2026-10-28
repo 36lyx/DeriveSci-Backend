@@ -42,29 +42,61 @@ def get_current_user():
     return None if uid is None else find_user(uid)
 
 
-def login_required(f):
-    """身份验证拦截装饰器。
-    拦截未携带凭证，或者凭证过期，或者凭证代表的用户不存在的请求，并将用户对象作为第一个参数传递给被装饰的函数。"""
+def optional_login(f):
+    """可选的身份验证拦截装饰器。
+    拦截传入了凭证但凭证过期，或者凭证代表的用户不存在的请求，并将用户对象作为第一个参数传递给被装饰的函数；
+    若无凭证，则将 None 作为第一个参数传递给被装饰的函数。
+    """
 
     @functools.wraps(f)
     def decorated_function(*args, **kwargs):
         try:
             verify_jwt_in_request()
         except Exception:
-            return {"msg": "请先登录"}, 401
+            return f(None, *args, **kwargs)
 
         uid = get_jwt_identity()
         if not uid:
-            return {"msg": "无效的 Token"}, 401
+            return {"code": "INVALID_TOKEN", "msg": "Invalid token."}, 401
 
         try:
             uid = int(uid)
         except ValueError:
-            return {"msg": "无效用户"}, 401
+            return {"code": "INVALID_CREDENTIALS", "msg": "Invalid user ID."}, 401
 
         user = find_user(int(uid))
         if not user:
-            return {"msg": "用户不存在"}, 404
+            return {"code": "INVALID_CREDENTIALS", "msg": "User not found."}, 404
+
+        return f(user, *args, **kwargs)
+
+    return decorated_function
+
+
+def login_required(f):
+    """身份验证拦截装饰器。
+    拦截未携带凭证，或者凭证过期，或者凭证代表的用户不存在的请求，并将用户对象作为第一个参数传递给被装饰的函数。
+    """
+
+    @functools.wraps(f)
+    def decorated_function(*args, **kwargs):
+        try:
+            verify_jwt_in_request()
+        except Exception:
+            return {"code": "LOGIN_REQUIRED", "msg": "Login required."}, 401
+
+        uid = get_jwt_identity()
+        if not uid:
+            return {"code": "INVALID_TOKEN", "msg": "Invalid token."}, 401
+
+        try:
+            uid = int(uid)
+        except ValueError:
+            return {"code": "INVALID_CREDENTIALS", "msg": "Invalid user ID."}, 401
+
+        user = find_user(int(uid))
+        if not user:
+            return {"code": "INVALID_CREDENTIALS", "msg": "User not found."}, 404
 
         return f(user, *args, **kwargs)
 
@@ -137,4 +169,4 @@ def check_blacklist(jwt_header, jwt_payload):
 
 @jwt.expired_token_loader
 def expired(jwt_header, jwt_payload):
-    return {"code": "TOKEN_EXPIRED", "msg": "token expired"}, 401
+    return {"code": "TOKEN_EXPIRED", "msg": "Token expired."}, 401
